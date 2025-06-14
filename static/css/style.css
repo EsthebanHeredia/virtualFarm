@@ -22,7 +22,10 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: url('/static/images/granjita.webp') center/cover no-repeat; /* Mantenemos fixed para el backdrop-filter */
+    background-image: url('/static/images/granjita.webp');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
@@ -629,4 +632,16 @@ textarea {
 
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3); /* Más translúcido */
+}
+
+@supports not (background-image: url('/static/images/granjita.webp')) {
+  body {
+    background-image: url('/static/images/granjita.png'); /* fallback para navegadores que no soportan webp */
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll; /* Evita problemas con fixed en dispositivos móviles iOS */
+  }
 }
