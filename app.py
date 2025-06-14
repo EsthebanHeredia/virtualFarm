@@ -84,8 +84,8 @@ def init_db():
     ''')
     
     # Insertar o actualizar usuarios por defecto
-    davili_password = hashlib.sha256("davili123".encode()).hexdigest()
-    kayli_password = hashlib.sha256("kayli123".encode()).hexdigest()
+    davili_password = hashlib.sha256("Kayliteamo".encode()).hexdigest()
+    kayli_password = hashlib.sha256("Daviliteamo".encode()).hexdigest()
     
     conn.execute('''
         INSERT INTO users (username, password_hash) VALUES (?, ?)
