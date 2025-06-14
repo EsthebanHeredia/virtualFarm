@@ -22,7 +22,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: url('../images/granjita.webp') center/cover no-repeat; /* Mantenemos fixed para el backdrop-filter */
+    background: url('/static/images/granjita.webp') center/cover no-repeat; /* Mantenemos fixed para el backdrop-filter */
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
