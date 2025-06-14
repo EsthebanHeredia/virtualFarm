@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Metas - Granjita de Davili y Kayli{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <h2>Metas de Pareja</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        Objetivos y sueños que queremos cumplir juntos
+    </p>
+    
+    <!-- Formulario para agregar nueva meta -->
+    <form method="POST" action="{{ url_for('add_goal') }}" style="margin-bottom: 30px;">
+        <div class="form-group">
+            <label for="title">Título de la meta</label>
+            <input type="text" id="title" name="title" required 
+                   placeholder="¿Qué queremos lograr juntos?">
+        </div>
+        <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea id="description" name="description" 
+                      placeholder="Describe la meta, pasos para lograrla, fecha objetivo, etc."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Agregar meta</button>
+    </form>
+</div>
+
+<!-- Lista de metas -->
+<div class="glass-card">
+    <h3>Nuestras metas</h3>
+    {% if goals %}
+        {% for goal in goals %}
+            <div class="list-item {% if goal.is_completed %}completed{% endif %}" 
+                 style="{% if goal.is_completed %}border-left: 4px solid var(--success-color);{% else %}border-left: 4px solid var(--accent-color);{% endif %}">
+                <div class="list-item-header">
+                    <span class="list-item-title">
+                        <a href="{{ url_for('toggle_goal', goal_id=goal.id) }}" 
+                           style="text-decoration: none; color: inherit;">
+                            {% if goal.is_completed %}
+                                🏆 {{ goal.title }}
+                            {% else %}
+                                🎯 {{ goal.title }}
+                            {% endif %}
+                        </a>
+                    </span>
+                    <span class="badge {% if goal.is_completed %}btn-success{% else %}btn-warning{% endif %}">
+                        {% if goal.is_completed %}
+                            ¡Lograda!
+                        {% else %}
+                            En progreso
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if goal.description %}
+                    <div class="goal-description">
+                        <p style="margin: 15px 0; line-height: 1.6; opacity: 0.9; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; hyphens: auto;">
+                            {{ goal.description }}
+                        </p>
+                    </div>
+                {% endif %}
+                
+                <div class="list-item-meta">
+                    👤 Creada por: <strong>{{ goal.created_by.title() }}</strong> 
+                    • 📅 {{ goal.created_at }}
+                    {% if goal.modified_by and goal.modified_by != goal.created_by %}
+                        <br>✏️ Modificada por: <strong>{{ goal.modified_by.title() }}</strong> 
+                        • 📅 {{ goal.modified_at }}
+                    {% endif %}
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="{{ url_for('toggle_goal', goal_id=goal.id) }}" 
+                       class="btn {% if goal.is_completed %}btn-warning{% else %}btn-success{% endif %}"
+                       style="padding: 8px 15px; font-size: 0.9rem;">
+                        {% if goal.is_completed %}
+                            ↩️ Marcar como pendiente
+                        {% else %}
+                            🏆 ¡Marcar como lograda!
+                        {% endif %}
+                    </a>
+                    
+                    <!-- Botón eliminar meta -->
+                    <form action="{{ url_for('delete_goal', goal_id=goal.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding: 8px 15px; font-size: 0.9rem;">
+                            🗑️ Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="list-item" style="text-align: center; opacity: 0.7;">
+            <p>No hay metas creadas aún</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">¡Crea vuestra primera meta usando el formulario de arriba!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Estadísticas y motivación -->
+<div class="glass-card" style="text-align: center;">
+    <h3>Progreso de metas</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-top: 20px;">
+        <div>
+            <div style="font-size: 2rem; color: var(--warning-color);">
+                {{ goals | selectattr('is_completed', 'equalto', false) | list | length }}
+            </div>
+            <div style="color: var(--text-secondary);">En progreso</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; color: var(--success-color);">
+                {{ goals | selectattr('is_completed', 'equalto', true) | list | length }}
+            </div>
+            <div style="color: var(--text-secondary);">Logradas</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; color: var(--accent-color);">
+                {{ goals | length }}
+            </div>
+            <div style="color: var(--text-secondary);">Total</div>
+        </div>
+        {% if goals | length > 0 %}
+        <div>
+            <div style="font-size: 2rem; color: var(--accent-color);">
+                {{ "%.0f" | format((goals | selectattr('is_completed', 'equalto', true) | list | length / goals | length) * 100) }}%
+            </div>
+            <div style="color: var(--text-secondary);">Completado</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if goals | selectattr('is_completed', 'equalto', true) | list | length > 0 %}
+    <div style="margin-top: 30px; padding: 20px; background: rgba(52, 199, 89, 0.1); border-radius: 12px; border: 1px solid rgba(52, 199, 89, 0.3);">
+        <h4 style="color: var(--success-color); margin-bottom: 10px;">🎉 ¡Felicitaciones!</h4>
+        <p style="color: var(--text-secondary);">
+            Han logrado {{ goals | selectattr('is_completed', 'equalto', true) | list | length }} 
+            {% if goals | selectattr('is_completed', 'equalto', true) | list | length == 1 %}meta{% else %}metas{% endif %} juntos. 
+            ¡Sigamos así!
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* Estilos específicos para que las metas sean responsive */
+@media (max-width: 768px) {
+    .list-item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .list-item-header .badge {
+        align-self: flex-start;
+    }
+    
+    .goal-description {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .list-item-meta {
+        word-wrap: break-word; 
+        overflow-wrap: break-word;
+    }
+}
+</style>
+{% endblock %}

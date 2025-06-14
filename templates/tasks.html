@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Tareas - Granjita de Davili y Kayli{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <h2>Tareas Compartidas</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        Lista de tareas que ambos pueden gestionar
+    </p>
+    
+    <!-- Formulario para agregar nueva tarea -->
+    <form method="POST" action="{{ url_for('add_task') }}" style="margin-bottom: 30px;">
+        <div class="form-group">
+            <label for="title">Título de la tarea</label>
+            <input type="text" id="title" name="title" required 
+                   placeholder="¿Qué necesitamos hacer?">
+        </div>
+        <div class="form-group">
+            <label for="description">Descripción (opcional)</label>
+            <textarea id="description" name="description" 
+                      placeholder="Detalles adicionales sobre la tarea..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">➕ Agregar tarea</button>
+    </form>
+</div>
+
+<!-- Lista de tareas -->
+<div class="glass-card">
+    <h3>Nuestras tareas</h3>
+    {% if tasks %}
+        {% for task in tasks %}
+            <div class="list-item {% if task.is_completed %}completed{% endif %}">
+                <div class="list-item-header">
+                    <span class="list-item-title">
+                        <a href="{{ url_for('toggle_task', task_id=task.id) }}" 
+                           style="text-decoration: none; color: inherit;">
+                            {% if task.is_completed %}
+                                ✅ {{ task.title }}
+                            {% else %}
+                                ⭕ {{ task.title }}
+                            {% endif %}
+                        </a>
+                    </span>
+                    <span class="badge {% if task.is_completed %}btn-success{% else %}btn-warning{% endif %}">
+                        {% if task.is_completed %}
+                            Completada
+                        {% else %}
+                            Pendiente
+                        {% endif %}
+                    </span>
+                </div>
+                
+                {% if task.description %}
+                    <p style="margin: 15px 0; line-height: 1.6; opacity: 0.9;">
+                        {{ task.description }}
+                    </p>
+                {% endif %}
+                
+                <div class="list-item-meta">
+                    👤 Creada por: <strong>{{ task.created_by.title() }}</strong> 
+                    • 📅 {{ task.created_at }}
+                    {% if task.modified_by and task.modified_by != task.created_by %}
+                        <br>✏️ Modificada por: <strong>{{ task.modified_by.title() }}</strong> 
+                        • 📅 {{ task.modified_at }}
+                    {% endif %}
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="{{ url_for('toggle_task', task_id=task.id) }}" 
+                       class="btn {% if task.is_completed %}btn-warning{% else %}btn-success{% endif %}"
+                       style="padding: 8px 15px; font-size: 0.9rem;">
+                        {% if task.is_completed %}
+                            ↩️ Marcar como pendiente
+                        {% else %}
+                            ✅ Marcar como completada
+                        {% endif %}
+                    </a>
+                    
+                    <!-- Botón de eliminar tarea -->
+                    <form action="{{ url_for('delete_task', task_id=task.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding: 8px 15px; font-size: 0.9rem;">
+                            🗑️ Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="list-item" style="text-align: center; opacity: 0.7;">
+            <p>No hay tareas creadas aún</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">¡Crea la primera tarea usando el formulario de arriba!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="glass-card" style="text-align: center;">
+    <h3>Estadísticas</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-top: 20px;">
+        <div>
+            <div style="font-size: 2rem; color: var(--warning-color);">
+                {{ tasks | selectattr('is_completed', 'equalto', false) | list | length }}
+            </div>
+            <div style="color: var(--text-secondary);">Pendientes</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; color: var(--success-color);">
+                {{ tasks | selectattr('is_completed', 'equalto', true) | list | length }}
+            </div>
+            <div style="color: var(--text-secondary);">Completadas</div>
+        </div>
+        <div>
+            <div style="font-size: 2rem; color: var(--accent-color);">
+                {{ tasks | length }}
+            </div>
+            <div style="color: var(--text-secondary);">Total</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

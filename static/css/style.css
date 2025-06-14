@@ -1,0 +1,632 @@
+/* Estilo Liquid Glass inspirado en Apple */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: rgba(255, 255, 255, 0.1); /* Aún más translúcido */
+    --secondary-color: rgba(255, 255, 255, 0.07); /* Aún más translúcido */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.8); 
+    --accent-color: #e9ecee;
+    --success-color: #34C759;
+    --warning-color: #FF9500;
+    --error-color: #FF3B30;
+    --border-radius: 16px; 
+    --glass-border: 1px solid rgba(255, 255, 255, 0.15); /* Borde más sutil */
+    --shadow: 0 8px 28px 0 rgba(31, 38, 100, 0.2); /* Sombra ligeramente más suave si es necesario */
+    --backdrop-filter: blur(18px) saturate(170%); /* Desenfoque y saturación ligeramente aumentados */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: url('../images/granjita.webp') center/cover no-repeat fixed; /* Mantenemos fixed para el backdrop-filter */
+    background-attachment: fixed;
+    color: var(--text-primary);
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Overlay para mejorar legibilidad */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.1); /* Ajustar si el contraste es demasiado alto/bajo con el nuevo glass */
+    z-index: -1;
+}
+
+/* Contenedor principal */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tarjetas con efecto glass */
+.glass-card {
+    background: var(--primary-color);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border-radius: var(--border-radius);
+    border: var(--glass-border);
+    box-shadow: var(--shadow);
+    padding: 30px;
+    margin: 20px 0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent); /* Reflejo superior más sutil */
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(31, 38, 100, 0.3); /* Sombra de hover más pronunciada, manteniendo el tinte */
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Títulos */
+h1, h2, h3 {
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+/* Formularios */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+input[type="text"],
+input[type="password"],
+textarea,
+select {
+    width: 100%;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.08); /* Fondo de input más translúcido */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borde de input más sutil */
+    border-radius: 10px; 
+    color: var(--text-primary);
+    font-size: 16px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(6px) saturate(120%); /* Desenfoque sutil para inputs */
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent-color); /* Mantener color de acento para foco */
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2); 
+    background: rgba(255, 255, 255, 0.12); /* Ligeramente más opaco en foco */
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Botones */
+.btn {
+    display: inline-block;
+    padding: 12px 24px; 
+    background: rgba(255, 255, 255, 0.1); /* Fondo translúcido blanco más sutil */
+    color: var(--text-primary); 
+    text-decoration: none;
+    border-radius: 10px; 
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Borde blanco translúcido más sutil */
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+    min-width: 120px;
+    backdrop-filter: blur(4px); 
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.btn:hover {
+    background: rgba(255, 255, 255, 0.18); /* Más opaco en hover */
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); 
+}
+
+.btn:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08); 
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-success {
+    background: rgba(52, 199, 89, 0.15); /* Tinte verde más translúcido */
+    border-color: rgba(52, 199, 89, 0.3);
+    color: #ffffff;
+}
+
+.btn-success:hover {
+    background: rgba(52, 199, 89, 0.2);
+    border-color: rgba(52, 199, 89, 0.4);
+    box-shadow: 0 8px 20px rgba(52, 199, 89, 0.2);
+}
+
+.btn-warning {
+    background: rgba(255, 149, 0, 0.15); /* Tinte naranja más translúcido */
+    border-color: rgba(255, 149, 0, 0.3);
+    color: #ffffff;
+}
+
+.btn-warning:hover {
+    background: rgba(255, 149, 0, 0.2);
+    border-color: rgba(255, 149, 0, 0.4);
+    box-shadow: 0 8px 20px rgba(255, 149, 0, 0.2);
+}
+
+.btn-error {
+    background: rgba(255, 59, 48, 0.15); /* Tinte rojo más translúcido */
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #ffffff;
+}
+
+.btn-error:hover {
+    background: rgba(255, 59, 48, 0.2);
+    border-color: rgba(255, 59, 48, 0.4);
+    box-shadow: 0 8px 20px rgba(255, 59, 48, 0.2);
+}
+
+.btn-danger {
+    background: rgba(255, 59, 48, 0.18); /* Fondo rojo translúcido */
+    border-color: rgba(255, 59, 48, 0.35);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: rgba(255, 59, 48, 0.28);
+    border-color: rgba(255, 59, 48, 0.5);
+    box-shadow: 0 8px 20px rgba(255, 59, 48, 0.18);
+}
+
+/* Grid para dashboard */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    width: 100%;
+    max-width: 1000px;
+}
+
+.dashboard-item {
+    text-align: center;
+    padding: 40px 30px;
+}
+
+.dashboard-item h3 {
+    margin-bottom: 15px;
+}
+
+.dashboard-item .counter {
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: #fff !important;
+    margin-bottom: 10px;
+    display: block;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.18);
+    letter-spacing: 0.02em;
+}
+
+.dashboard-item p {
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+}
+
+/* Navegación */
+.nav {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.nav-menu {
+    background: var(--secondary-color); 
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border-radius: 14px; 
+    border: var(--glass-border);
+    box-shadow: var(--shadow);
+    padding: 10px; 
+    display: flex;
+    gap: 10px; 
+    align-items: center;
+}
+
+.nav-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 8px 12px; /* Padding ajustado */
+    border-radius: 8px; /* Radio de borde ajustado */
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.nav-user {
+    color: var(--accent-color);
+    font-weight: 850;
+}
+
+/* --- Navbar hamburguesa --- */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    z-index: 1100;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.18);
+    margin-left: 10px;
+    transition: background 0.2s;
+}
+.hamburger:hover {
+    background: rgba(255,255,255,0.15);
+}
+.hamburger span {
+    height: 4px;
+    width: 26px;
+    background: #fff;
+    margin: 4px 6px;
+    border-radius: 2px;
+    transition: all 0.3s;
+    display: block;
+}
+
+/* Dropdown menu móvil */
+.nav-menu.mobile {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background: var(--secondary-color);
+    border-radius: 14px;
+    border: var(--glass-border);
+    box-shadow: var(--shadow);
+    padding: 10px 0;
+    min-width: 160px;
+    z-index: 1050;
+    animation: fadeInMenu 0.25s;
+}
+@keyframes fadeInMenu {
+    from { opacity: 0; transform: translateY(-10px);}
+    to { opacity: 1; transform: translateY(0);}
+}
+.nav-menu.mobile .nav-link {
+    padding: 12px 24px;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.nav-menu.mobile .nav-link:last-child {
+    border-bottom: none;
+}
+
+/* Responsive: navbar hamburguesa */
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+    }
+    .hamburger {
+        display: flex;
+    }
+    .nav {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        left: auto;
+        z-index: 1100;
+        background: none;
+    }
+    .nav-menu.mobile {
+        display: flex;
+    }
+}
+
+/* Mensajes flash */
+.flash-messages {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;
+    max-width: 500px;
+    width: 90%;
+}
+
+.flash-message {
+    background: var(--primary-color);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border-radius: 12px; 
+    border: var(--glass-border);
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    animation: slideDown 0.3s ease;
+    box-shadow: var(--shadow); 
+}
+
+.flash-message.success {
+    border-left: 4px solid var(--success-color);
+}
+
+.flash-message.error {
+    border-left: 4px solid var(--error-color);
+}
+
+.flash-message.info {
+    border-left: 4px solid var(--accent-color);
+}
+
+.flash-message.warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Listas */
+.list-item {
+    background: rgba(255, 255, 255, 0.08); 
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.15); 
+    transition: all 0.3s ease;
+    /* Aplicar backdrop-filter si se desea un efecto de cristal más profundo aquí también */
+    /* backdrop-filter: blur(5px) saturate(110%); */
+    /* -webkit-backdrop-filter: blur(5px) saturate(110%); */
+}
+
+.list-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(5px);
+}
+
+.list-item.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.list-item-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.list-item-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 10px;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge.unread {
+    background: rgba(0, 122, 255, 0.18); /* Azul translúcido, igual que el botón de borrar pero azul */
+    border: 1px solid rgba(0, 122, 255, 0.35);
+    color: #007aff;
+    margin-right: 10px;
+    /* Sin animación ni parpadeo */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .glass-card {
+        padding: 20px;
+        margin: 10px 0;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .nav {
+        position: static;
+        margin-bottom: 20px;
+    }
+    
+    .nav-menu {
+        display: none;
+    }
+    .hamburger {
+        display: flex;
+    }
+    .nav {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        left: auto;
+        z-index: 1100;
+        background: none;
+    }
+    .nav-menu.mobile {
+        display: flex;
+    }
+}
+
+/* Login específico */
+.login-form {
+    max-width: 400px;
+    width: 100%;
+}
+
+.login-title {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #e1e1e1 0%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Estilos para selección de usuario en Login */
+.user-selector-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.user-option {
+    padding: 20px 40px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+    border-width: 2px; 
+    border-color: rgba(255, 255, 255, 0.2); /* Borde más sutil */
+}
+
+.user-option.selected {
+    background: rgba(255,255,255,0.22);
+    border-color: rgba(255, 255, 255, 0.4);
+    border-width: 3px;
+    box-shadow: 0 0 24px rgba(255,255,255,0.18), inset 0 0 8px rgba(255,255,255,0.12);
+    transform: scale(1.06);
+    color: #fff;
+}
+
+
+/* Efectos adicionales */
+.floating {
+    animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.glow {
+    box-shadow: 0 0 20px rgba(0, 122, 255, 0.3);
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05); /* Más translúcido */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2); /* Más translúcido */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3); /* Más translúcido */
+}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Granjita de Davili y Kayli{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="margin-top: 80px;">
+    <h1>¡Hola {{ session.username.title() }}!</h1>
+    <p style="text-align: center; color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 40px;">
+        Bienvenido/a a nuestro espacio personal
+    </p>
+</div>
+
+<div class="dashboard-grid">
+    <div class="glass-card dashboard-item">
+        <h3>Mensajes</h3>
+        <span class="counter" style="color: #fff;">{{ unread_messages }}</span>
+        <p>mensajes sin leer</p>
+        <a href="{{ url_for('messages') }}" class="btn">Ver mensajes</a>
+    </div>
+    
+    <div class="glass-card dashboard-item">
+        <h3>Tareas Compartidas</h3>
+        <span class="counter" style="color: #fff;">{{ pending_tasks }}</span>
+        <p>tareas pendientes</p>
+        <a href="{{ url_for('tasks') }}" class="btn">Ver tareas</a>
+    </div>
+    
+    <div class="glass-card dashboard-item">
+        <h3>Metas de Pareja</h3>
+        <span class="counter" style="color: #fff;">{{ pending_goals }}</span>
+        <p>metas por cumplir</p>
+        <a href="{{ url_for('goals') }}" class="btn">Ver metas</a>
+    </div>
+</div>
+{% endblock %}

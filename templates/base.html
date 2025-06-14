@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Granjita de Davili y Kayli - davili & Kayli{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+</head>
+<body>
+    <!-- Navegación (solo si está logueado) -->
+    {% if session.username %}
+    <nav class="nav">
+        <div class="nav-menu">
+            <span class="nav-user">{{ session.username }}</span>
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Inicio</a>
+            <a href="{{ url_for('messages') }}" class="nav-link">Mensajes</a>
+            <a href="{{ url_for('tasks') }}" class="nav-link">Tareas</a>
+            <a href="{{ url_for('goals') }}" class="nav-link">Metas</a>
+            <a href="{{ url_for('logout') }}" class="nav-link">Salir</a>
+        </div>
+        <div class="hamburger" id="hamburger-menu" aria-label="Abrir menú" tabindex="0">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-menu mobile" id="mobile-menu" style="display: none;">
+            <span class="nav-user" style="padding: 12px 24px;">{{ session.username }}</span>
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Inicio</a>
+            <a href="{{ url_for('messages') }}" class="nav-link">Mensajes</a>
+            <a href="{{ url_for('tasks') }}" class="nav-link">Tareas</a>
+            <a href="{{ url_for('goals') }}" class="nav-link">Metas</a>
+            <a href="{{ url_for('logout') }}" class="nav-link">Salir</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Contenido principal -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Auto-hide flash messages
+        document.addEventListener('DOMContentLoaded', function() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    setTimeout(function() {
+                        message.remove();
+                    }, 300);
+                }, 5000);
+            });
+
+            // Hamburguesa menú móvil
+            const hamburger = document.getElementById('hamburger-menu');
+            const mobileMenu = document.getElementById('mobile-menu');
+            let menuOpen = false;
+            if (hamburger && mobileMenu) {
+                hamburger.addEventListener('click', function() {
+                    menuOpen = !menuOpen;
+                    mobileMenu.style.display = menuOpen ? 'flex' : 'none';
+                });
+                // Cerrar menú al hacer click fuera
+                document.addEventListener('click', function(e) {
+                    if (menuOpen && !mobileMenu.contains(e.target) && !hamburger.contains(e.target)) {
+                        mobileMenu.style.display = 'none';
+                        menuOpen = false;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

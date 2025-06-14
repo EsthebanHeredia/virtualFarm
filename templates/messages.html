@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Mensajes - Granjita de Davili y Kayli{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <h2>Mensajes</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 30px;">
+        Comparte mensajes instantáneos con tu pareja
+    </p>
+    
+    <!-- Formulario para enviar nuevo mensaje -->
+    <form method="POST" action="{{ url_for('send_message') }}" style="margin-bottom: 30px;">
+        <div class="form-group">
+            <label for="content">Nuevo mensaje para {{ 'Kayli' if session.username == 'davili' else 'davili' }}</label>
+            <textarea id="content" name="content" required 
+                      placeholder="Escribe tu mensaje aquí..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Enviar mensaje</button>
+    </form>
+</div>
+
+<!-- Mensajes recibidos -->
+<div class="glass-card">
+    <h3>Mensajes recibidos</h3>
+    {% if received_messages %}
+        {% for message in received_messages %}
+            <div class="list-item {% if not message.is_read %}glow{% endif %}">
+                <div class="list-item-header">
+                    <span class="list-item-title">
+                        💌 De: {{ message.sender.title() }}
+                        {% if not message.is_read %}
+                            <span class="badge unread">Nuevo</span>
+                        {% endif %}
+                    </span>
+                    {% if not message.is_read %}
+                        <a href="{{ url_for('mark_message_read', message_id=message.id) }}" 
+                           class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">
+                            Marcar como leído
+                        </a>
+                    {% endif %}
+                    <!-- Botón borrar mensaje recibido -->
+                    <form action="{{ url_for('delete_message', message_id=message.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8rem;">
+                            Borrar
+                        </button>
+                    </form>
+                </div>
+                <p style="margin: 15px 0; line-height: 1.6;">{{ message.content }}</p>
+                <div class="list-item-meta">
+                    {{ message.created_at }} 
+                    {% if message.is_read %}
+                        • <span style="color: var(--success-color);">✓ Leído</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="list-item" style="text-align: center; opacity: 0.7;">
+            <p>No tienes mensajes recibidos aún</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Mensajes enviados -->
+<div class="glass-card">
+    <h3>Mensajes enviados</h3>
+    {% if sent_messages %}
+        {% for message in sent_messages %}
+            <div class="list-item">
+                <div class="list-item-header" style="gap: 10px; flex-wrap: wrap;">
+                    <span class="list-item-title" style="margin-right: 10px;">
+                        Para: {{ message.receiver.title() }}
+                    </span>
+                    {% if message.is_read %}
+                        <span class="badge" style="margin-right: 3px;">Leído</span>
+                    {% else %}
+                        <span class="badge unread" style="margin-right: 3px;">Sin leer</span>
+                    {% endif %}
+                    <!-- Botón borrar mensaje enviado -->
+                    <form action="{{ url_for('delete_message', message_id=message.id) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" style="padding: 5px 10px; font-size: 0.8rem; margin-left: 10px;">
+                            Borrar
+                        </button>
+                    </form>
+                </div>
+                <p style="margin: 15px 0; line-height: 1.6;">{{ message.content }}</p>
+                <div class="list-item-meta">
+                    {{ message.created_at }}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="list-item" style="text-align: center; opacity: 0.7;">
+            <p>No has enviado mensajes aún</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
