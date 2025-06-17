@@ -1,29 +1,40 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-import sqlite3
+import psycopg2
+import psycopg2.extras
 import hashlib
 import os
 from datetime import datetime, timedelta
 from functools import wraps
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'tu_clave_secreta_muy_segura_aqui_12345'
+app.secret_key = os.environ.get('SECRET_KEY', 'tu_clave_secreta_muy_segura_aqui_12345')
 
-# Configuración de la base de datos
-DATABASE = 'database.db'
+# Configuración de la base de datos PostgreSQL
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
+    """Crea una conexión a la base de datos PostgreSQL"""
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.autocommit = True  # Similar a conn.commit() después de cada operación
     return conn
+
+def get_db_cursor(conn):
+    """Obtiene un cursor con nombre de columna"""
+    return conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 def init_db():
     """Inicializa la base de datos con las tablas necesarias"""
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     
     # Tabla de usuarios
-    conn.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -31,9 +42,9 @@ def init_db():
     ''')
     
     # Tabla de mensajes
-    conn.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             sender TEXT NOT NULL,
             receiver TEXT NOT NULL,
             content TEXT NOT NULL,
@@ -43,9 +54,9 @@ def init_db():
     ''')
     
     # Tabla de tareas compartidas
-    conn.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
             is_completed BOOLEAN DEFAULT FALSE,
@@ -57,9 +68,9 @@ def init_db():
     ''')
     
     # Tabla de metas de pareja
-    conn.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS goals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
             is_completed BOOLEAN DEFAULT FALSE,
@@ -71,9 +82,9 @@ def init_db():
     ''')
     
     # Tabla de cartas cifradas
-    conn.execute('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS encrypted_letters (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             sender TEXT NOT NULL,
             receiver TEXT NOT NULL,
             title TEXT NOT NULL,
@@ -87,19 +98,16 @@ def init_db():
     davili_password = hashlib.sha256("Kayliteamo".encode()).hexdigest()
     kayli_password = hashlib.sha256("Daviliteamo".encode()).hexdigest()
     
-    conn.execute('''
-        INSERT INTO users (username, password_hash) VALUES (?, ?)
-        ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash
+    # En PostgreSQL, usar ON CONFLICT para hacer UPSERT
+    cursor.execute('''
+        INSERT INTO users (username, password_hash) VALUES (%s, %s)
+        ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
     ''', ('davili', davili_password))
     
-    conn.execute('''
-        INSERT INTO users (username, password_hash) VALUES (?, ?)
-        ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash
+    cursor.execute('''
+        INSERT INTO users (username, password_hash) VALUES (%s, %s)
+        ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
     ''', ('kayli', kayli_password))
-    
-    conn.commit()
-    # El bloque try-except sqlite3.IntegrityError ya no es necesario para estas inserciones específicas
-    # ya que ON CONFLICT maneja la existencia de los usuarios.
     
     conn.close()
 
@@ -119,23 +127,23 @@ def login_required(f):
 def delete_old_messages():
     """Elimina mensajes con más de 5 días de antigüedad"""
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     five_days_ago = datetime.now() - timedelta(days=5)
-    conn.execute(
-        'DELETE FROM messages WHERE created_at < ?',
+    cursor.execute(
+        'DELETE FROM messages WHERE created_at < %s',
         (five_days_ago.strftime('%Y-%m-%d %H:%M:%S'),)
     )
-    conn.commit()
     conn.close()
 
 def delete_old_completed_tasks():
     """Elimina tareas completadas con más de 5 días de antigüedad"""
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     five_days_ago = datetime.now() - timedelta(days=5)
-    conn.execute(
-        'DELETE FROM tasks WHERE is_completed = TRUE AND modified_at < ?',
+    cursor.execute(
+        'DELETE FROM tasks WHERE is_completed = TRUE AND modified_at < %s',
         (five_days_ago.strftime('%Y-%m-%d %H:%M:%S'),)
     )
-    conn.commit()
     conn.close()
 
 @app.route('/')
@@ -151,16 +159,17 @@ def login():
         password = request.form['password']
         
         conn = get_db_connection()
-        user = conn.execute(
-            'SELECT * FROM users WHERE username = ? AND password_hash = ?',
+        cursor = get_db_cursor(conn)
+        cursor.execute(
+            'SELECT * FROM users WHERE username = %s AND password_hash = %s',
             (username, hash_password(password))
-        ).fetchone()
+        )
+        user = cursor.fetchone()
         conn.close()
         
         if user:
             session['user_id'] = user['id']
             session['username'] = user['username']
-            # flash(f'¡Bienvenido/a {username}!', 'success')  # Eliminado para no mostrar notificación de bienvenida
             return redirect(url_for('dashboard'))
         else:
             flash('Usuario o contraseña incorrectos', 'error')
@@ -177,28 +186,33 @@ def logout():
 @login_required
 def dashboard():
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     
     # Contar mensajes no leídos
-    unread_messages = conn.execute(
-        'SELECT COUNT(*) as count FROM messages WHERE receiver = ? AND is_read = FALSE',
+    cursor.execute(
+        'SELECT COUNT(*) as count FROM messages WHERE receiver = %s AND is_read = FALSE',
         (session['username'],)
-    ).fetchone()['count']
+    )
+    unread_messages = cursor.fetchone()['count']
     
     # Contar cartas no leídas
-    unread_letters = conn.execute(
-        'SELECT COUNT(*) as count FROM encrypted_letters WHERE receiver = ? AND is_read = FALSE',
+    cursor.execute(
+        'SELECT COUNT(*) as count FROM encrypted_letters WHERE receiver = %s AND is_read = FALSE',
         (session['username'],)
-    ).fetchone()['count']
+    )
+    unread_letters = cursor.fetchone()['count']
     
     # Contar tareas pendientes
-    pending_tasks = conn.execute(
+    cursor.execute(
         'SELECT COUNT(*) as count FROM tasks WHERE is_completed = FALSE'
-    ).fetchone()['count']
+    )
+    pending_tasks = cursor.fetchone()['count']
     
     # Contar metas pendientes
-    pending_goals = conn.execute(
+    cursor.execute(
         'SELECT COUNT(*) as count FROM goals WHERE is_completed = FALSE'
-    ).fetchone()['count']
+    )
+    pending_goals = cursor.fetchone()['count']
     
     conn.close()
     
@@ -214,18 +228,21 @@ def messages():
     # Borrar mensajes antiguos antes de mostrar la bandeja
     delete_old_messages()
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     
     # Obtener todos los mensajes para el usuario actual
-    received_messages = conn.execute(
-        'SELECT * FROM messages WHERE receiver = ? ORDER BY created_at DESC',
+    cursor.execute(
+        'SELECT * FROM messages WHERE receiver = %s ORDER BY created_at DESC',
         (session['username'],)
-    ).fetchall()
+    )
+    received_messages = cursor.fetchall()
     
     # Obtener mensajes enviados
-    sent_messages = conn.execute(
-        'SELECT * FROM messages WHERE sender = ? ORDER BY created_at DESC',
+    cursor.execute(
+        'SELECT * FROM messages WHERE sender = %s ORDER BY created_at DESC',
         (session['username'],)
-    ).fetchall()
+    )
+    sent_messages = cursor.fetchall()
     
     conn.close()
     
@@ -240,11 +257,11 @@ def send_message():
     receiver = 'kayli' if session['username'] == 'davili' else 'davili'
     
     conn = get_db_connection()
-    conn.execute(
-        'INSERT INTO messages (sender, receiver, content) VALUES (?, ?, ?)',
+    cursor = get_db_cursor(conn)
+    cursor.execute(
+        'INSERT INTO messages (sender, receiver, content) VALUES (%s, %s, %s)',
         (session['username'], receiver, content)
     )
-    conn.commit()
     conn.close()
     
     flash('Mensaje enviado correctamente', 'success')
@@ -254,11 +271,11 @@ def send_message():
 @login_required
 def mark_message_read(message_id):
     conn = get_db_connection()
-    conn.execute(
-        'UPDATE messages SET is_read = TRUE WHERE id = ? AND receiver = ?',
+    cursor = get_db_cursor(conn)
+    cursor.execute(
+        'UPDATE messages SET is_read = TRUE WHERE id = %s AND receiver = %s',
         (message_id, session['username'])
     )
-    conn.commit()
     conn.close()
     
     return redirect(url_for('messages'))
@@ -267,12 +284,12 @@ def mark_message_read(message_id):
 @login_required
 def delete_message(message_id):
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     # Solo permite borrar si el usuario es el receptor o el emisor
-    conn.execute(
-        'DELETE FROM messages WHERE id = ? AND (receiver = ? OR sender = ?)',
+    cursor.execute(
+        'DELETE FROM messages WHERE id = %s AND (receiver = %s OR sender = %s)',
         (message_id, session['username'], session['username'])
     )
-    conn.commit()
     conn.close()
     flash('Mensaje eliminado correctamente', 'success')
     return redirect(url_for('messages'))
@@ -284,10 +301,12 @@ def tasks():
     delete_old_completed_tasks()
     
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     # Ordenar primero por is_completed (las pendientes primero), luego por fecha de creación descendente
-    all_tasks = conn.execute(
+    cursor.execute(
         'SELECT * FROM tasks ORDER BY is_completed ASC, created_at DESC'
-    ).fetchall()
+    )
+    all_tasks = cursor.fetchall()
     conn.close()
     
     return render_template('tasks.html', tasks=all_tasks)
@@ -299,11 +318,11 @@ def add_task():
     description = request.form.get('description', '')
     
     conn = get_db_connection()
-    conn.execute(
-        'INSERT INTO tasks (title, description, created_by) VALUES (?, ?, ?)',
+    cursor = get_db_cursor(conn)
+    cursor.execute(
+        'INSERT INTO tasks (title, description, created_by) VALUES (%s, %s, %s)',
         (title, description, session['username'])
     )
-    conn.commit()
     conn.close()
     
     flash('Tarea agregada correctamente', 'success')
@@ -313,14 +332,15 @@ def add_task():
 @login_required
 def toggle_task(task_id):
     conn = get_db_connection()
-    task = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    cursor = get_db_cursor(conn)
+    cursor.execute('SELECT * FROM tasks WHERE id = %s', (task_id,))
+    task = cursor.fetchone()
     
     new_status = not task['is_completed']
-    conn.execute(
-        'UPDATE tasks SET is_completed = ?, modified_by = ?, modified_at = ? WHERE id = ?',
+    cursor.execute(
+        'UPDATE tasks SET is_completed = %s, modified_by = %s, modified_at = %s WHERE id = %s',
         (new_status, session['username'], datetime.now(), task_id)
     )
-    conn.commit()
     conn.close()
     
     return redirect(url_for('tasks'))
@@ -329,9 +349,9 @@ def toggle_task(task_id):
 @login_required
 def delete_task(task_id):
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     # Eliminar la tarea si existe
-    conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
-    conn.commit()
+    cursor.execute('DELETE FROM tasks WHERE id = %s', (task_id,))
     conn.close()
     flash('Tarea eliminada correctamente', 'success')
     return redirect(url_for('tasks'))
@@ -340,9 +360,11 @@ def delete_task(task_id):
 @login_required
 def goals():
     conn = get_db_connection()
-    all_goals = conn.execute(
+    cursor = get_db_cursor(conn)
+    cursor.execute(
         'SELECT * FROM goals ORDER BY created_at DESC'
-    ).fetchall()
+    )
+    all_goals = cursor.fetchall()
     conn.close()
     
     return render_template('goals.html', goals=all_goals)
@@ -354,11 +376,11 @@ def add_goal():
     description = request.form.get('description', '')
     
     conn = get_db_connection()
-    conn.execute(
-        'INSERT INTO goals (title, description, created_by) VALUES (?, ?, ?)',
+    cursor = get_db_cursor(conn)
+    cursor.execute(
+        'INSERT INTO goals (title, description, created_by) VALUES (%s, %s, %s)',
         (title, description, session['username'])
     )
-    conn.commit()
     conn.close()
     
     flash('Meta agregada correctamente', 'success')
@@ -368,14 +390,15 @@ def add_goal():
 @login_required
 def toggle_goal(goal_id):
     conn = get_db_connection()
-    goal = conn.execute('SELECT * FROM goals WHERE id = ?', (goal_id,)).fetchone()
+    cursor = get_db_cursor(conn)
+    cursor.execute('SELECT * FROM goals WHERE id = %s', (goal_id,))
+    goal = cursor.fetchone()
     
     new_status = not goal['is_completed']
-    conn.execute(
-        'UPDATE goals SET is_completed = ?, modified_by = ?, modified_at = ? WHERE id = ?',
+    cursor.execute(
+        'UPDATE goals SET is_completed = %s, modified_by = %s, modified_at = %s WHERE id = %s',
         (new_status, session['username'], datetime.now(), goal_id)
     )
-    conn.commit()
     conn.close()
     
     return redirect(url_for('goals'))
@@ -384,8 +407,8 @@ def toggle_goal(goal_id):
 @login_required
 def delete_goal(goal_id):
     conn = get_db_connection()
-    conn.execute('DELETE FROM goals WHERE id = ?', (goal_id,))
-    conn.commit()
+    cursor = get_db_cursor(conn)
+    cursor.execute('DELETE FROM goals WHERE id = %s', (goal_id,))
     conn.close()
     flash('Meta eliminada correctamente', 'success')
     return redirect(url_for('goals'))
@@ -394,18 +417,21 @@ def delete_goal(goal_id):
 @login_required
 def encrypted_letters():
     conn = get_db_connection()
+    cursor = get_db_cursor(conn)
     
     # Obtener cartas recibidas
-    received_letters = conn.execute(
-        'SELECT * FROM encrypted_letters WHERE receiver = ? ORDER BY created_at DESC',
+    cursor.execute(
+        'SELECT * FROM encrypted_letters WHERE receiver = %s ORDER BY created_at DESC',
         (session['username'],)
-    ).fetchall()
+    )
+    received_letters = cursor.fetchall()
     
     # Obtener cartas enviadas
-    sent_letters = conn.execute(
-        'SELECT * FROM encrypted_letters WHERE sender = ? ORDER BY created_at DESC',
+    cursor.execute(
+        'SELECT * FROM encrypted_letters WHERE sender = %s ORDER BY created_at DESC',
         (session['username'],)
-    ).fetchall()
+    )
+    sent_letters = cursor.fetchall()
     
     conn.close()
     
@@ -425,11 +451,11 @@ def create_letter():
         encrypted_content = content  # Aquí iría el cifrado RSA
         
         conn = get_db_connection()
-        conn.execute(
-            'INSERT INTO encrypted_letters (sender, receiver, title, encrypted_content) VALUES (?, ?, ?, ?)',
+        cursor = get_db_cursor(conn)
+        cursor.execute(
+            'INSERT INTO encrypted_letters (sender, receiver, title, encrypted_content) VALUES (%s, %s, %s, %s)',
             (session['username'], receiver, title, encrypted_content)
         )
-        conn.commit()
         conn.close()
         
         flash('Carta enviada correctamente', 'success')
@@ -441,11 +467,11 @@ def create_letter():
 @login_required
 def mark_letter_read(letter_id):
     conn = get_db_connection()
-    conn.execute(
-        'UPDATE encrypted_letters SET is_read = TRUE WHERE id = ? AND receiver = ?',
+    cursor = get_db_cursor(conn)
+    cursor.execute(
+        'UPDATE encrypted_letters SET is_read = TRUE WHERE id = %s AND receiver = %s',
         (letter_id, session['username'])
     )
-    conn.commit()
     conn.close()
     
     flash('Carta marcada como leída', 'success')
@@ -453,6 +479,5 @@ def mark_letter_read(letter_id):
 
 if __name__ == '__main__':
     init_db()
-    import os
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
     app.run(host="0.0.0.0", port=port)
